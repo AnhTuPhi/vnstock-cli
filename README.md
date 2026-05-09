@@ -38,7 +38,7 @@ source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
 # Run the CLI
-python main.py --help
+python sample.py --help
 ```
 
 ## Usage

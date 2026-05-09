@@ -1,89 +1,70 @@
-import time
-import typer
-from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
-from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
-from rich import print as rprint
-from rich.text import Text
-from rich.align import Align
+import os
+from dotenv import load_dotenv
+from vnstock import Quote, Company, Finance, Listing, change_api_key
 
-app = typer.Typer()
-console = Console()
+load_dotenv()
+change_api_key(os.environ["VNSTOCK_API_KEY"])
+
+SYMBOL = "MSN"
+SOURCE = "KBS"
+
+quote = Quote(symbol=SYMBOL, source=SOURCE)
+company = Company(symbol=SYMBOL, source=SOURCE)
+finance = Finance(symbol=SYMBOL, source=SOURCE)
+listing = Listing(source=SOURCE)
 
 
-@app.command()
-def welcome(name: str = typer.Argument("Investor")):
-    # Header banner
-    console.print()
-    console.print(
-        Panel.fit(
-            Align.center(
-                Text.assemble(
-                    ("  vnstock", "bold cyan"),
-                    ("-", "white"),
-                    ("cli  ", "bold green"),
-                    ("\nVietnamese Stock Market • Terminal Edition", "dim white"),
-                )
-            ),
-            border_style="cyan",
-            padding=(1, 4),
-        )
-    )
+def price_history():
+    df = quote.history(start="2024-01-01", end="2024-12-31", interval="1D")
+    print(df.head())
+    return df
 
-    # Greeting
-    console.print()
-    rprint(f"  [bold white]Welcome back,[/bold white] [bold yellow]{name}[/bold yellow] [green]— glad to have you.[/green]")
-    console.print()
 
-    # Fake loading sequence
-    with Progress(
-        SpinnerColumn(spinner_name="dots", style="cyan"),
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(bar_width=30, style="cyan", complete_style="green"),
-        TextColumn("[green]{task.percentage:>3.0f}%"),
-        console=console,
-        transient=True,
-    ) as progress:
-        task = progress.add_task("[cyan]Connecting to market data...", total=100)
-        for _ in range(100):
-            time.sleep(0.01)
-            progress.advance(task, 1)
+def company_overview():
+    info = company.overview()
+    print(info)
+    return info
 
-    # Market snapshot table
-    table = Table(
-        title="Market Snapshot",
-        title_style="bold cyan",
-        border_style="bright_black",
-        header_style="bold white",
-        show_lines=True,
-    )
 
-    table.add_column("Ticker", style="bold yellow", justify="center")
-    table.add_column("Price", justify="right")
-    table.add_column("Change", justify="right")
-    table.add_column("Volume", justify="right", style="dim")
-    table.add_column("Signal", justify="center")
+def income_statement():
+    df = finance.income_statement(period="year", lang="en")
+    print(df.head())
+    return df
 
-    rows = [
-        ("FPT", "125,400", "+2.3%", "4.2M", "[bold green]BUY[/bold green]"),
-        ("VNM", "78,200",  "-0.8%", "1.8M", "[bold red]SELL[/bold red]"),
-        ("HPG", "26,500",  "+1.1%", "9.1M", "[bold green]BUY[/bold green]"),
-        ("MWG", "43,900",  "+0.0%", "2.5M", "[bold yellow]HOLD[/bold yellow]"),
-        ("VIC", "38,700",  "-1.4%", "3.3M", "[bold red]SELL[/bold red]"),
-    ]
 
-    for ticker, price, change, volume, signal in rows:
-        change_style = "green" if "+" in change else "red" if "-" in change else "white"
-        table.add_row(ticker, price, f"[{change_style}]{change}[/{change_style}]", volume, signal)
+def balance_sheet():
+    df = finance.balance_sheet(period="year", lang="en")
+    print(df.head())
+    return df
 
-    console.print(table)
 
-    # Footer hint
-    console.print()
-    rprint("  [dim]Run [bold white]vnstock --help[/bold white] to explore all commands.[/dim]")
-    console.print()
+def intraday_quotes():
+    df = quote.intraday(page_size=100)
+    print(df.head())
+    return df
+
+
+def list_all_symbols():
+    df = listing.all_symbols()
+    print(df.head(20))
+    return df
 
 
 if __name__ == "__main__":
-    app()
+    print("=== Price History ===")
+    price_history()
+
+    print("\n=== Company Overview ===")
+    company_overview()
+
+    print("\n=== Income Statement ===")
+    income_statement()
+
+    print("\n=== Balance Sheet ===")
+    balance_sheet()
+
+    print("\n=== Intraday Quotes ===")
+    intraday_quotes()
+
+    print("\n=== All Symbols ===")
+    list_all_symbols()
